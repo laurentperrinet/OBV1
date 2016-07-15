@@ -1,0 +1,131 @@
+((*- extends 'report.tplx' -*))
+
+% Default to the notebook output style
+((* set cell_style = 'style_ipython.tplx' *))
+%((* set cell_style = 'style_bw_python.tplx' *))
+
+((* block docclass *))
+\documentclass[french, 12pt]{report}
+((* endblock docclass *))
+
+((* block packages *))
+((( super() )))
+\usepackage[french]{babel}%
+%\usepackage{graphics}%
+\usepackage{setspace}%
+
+\newcommand{\BookTitle}{
+{\bf Aix-Marseille Université}\\
+        {\bf Mémoire de Recherche} \\
+        présenté en vue de l'obtention du \\
+         {\bf MASTER de NEUROSCIENCES} \\
+         (Spécialité: NIC)
+        }
+\newcommand{\Title}{OB-V1 : un modèle de détection de l'orientation dans l'aire visuelle primaire}% 
+\newcommand{\Author}{Fernand David Arbib}%
+\newcommand{\AuthorB}{Laurent U.~Perrinet}%
+\newcommand{\Team}{\'Equipe Inference in Visual Behaviour (InViBe)}%
+\newcommand{\Institute}{Institut de Neurosciences de la Timone}%
+\newcommand{\InstituteUMR}{UMR 7289, CNRS / Aix-Marseille Université}%
+\newcommand{\Address}{27, Bd. Jean Moulin, 13385 Marseille Cedex 5, France} 
+\newcommand{\Website}{http://invibe.net/LaurentPerrinet}
+\newcommand{\Email}{Laurent.Perrinet@univ-amu.fr} 
+                   
+((* endblock packages *))
+
+((* block h1 -*))\chapter((* endblock h1 -*))
+((* block h2 -*))\section((* endblock h2 -*))
+((* block h3 -*))\subsection((* endblock h3 -*))
+((* block h4 -*))\subsubsection((* endblock h4 -*))
+((* block h5 -*))\paragraph((* endblock h5 -*))
+
+((* block abstract *))
+%\tableofcontents
+~\par
+\newpage
+((* endblock abstract *))
+
+((* block margins *))
+\parindent=0pt
+\parskip=6pt
+((* endblock margins *))
+
+((* block predoc *))
+((* block title *))
+                            \title{\Title}
+((* endblock title *))
+((* block author *))
+                            \author{\Author}
+((* endblock author *))
+((* block maketitle *))     
+%\maketitle
+\begin{titlepage}
+
+\begin{center}
+%\vskip 2cm
+                   \begin{spacing}{1.2}
+{\Large \BookTitle }%
+                   \end{spacing}
+\vskip 1cm
+                   \begin{spacing}{1.5}
+{\Huge \Title }
+                   \end{spacing}
+%\vskip 1cm
+%\emph{\Large \SubTitle }%
+\begin{center}
+\includegraphics{/tmp/troislogos.png} 
+\end{center}
+%\vskip 1cm
+                   {\renewcommand{\arraystretch}{1.5} %<- modify value to suit your needs
+\begin{tabular}[t]{|c|c|}
+\hline
+Par: & {\large \Author}  \\\hline
+Responsable de Stage: & {\large \AuthorB}  \\%\hline
+&\url{\Website}\\%\hline
+&\url{\Email}\\\hline
+Laboratoire: & \Team \\%\hline
+             &          \Institute \\ 
+             &           \InstituteUMR \\%\hline
+             &\Address \\\hline
+\end{tabular}
+                    }
+\vskip .5cm
+
+\vfill
+{\large Juin 2016}
+%\pageskip
+\end{center}
+\end{titlepage}
+\tableofcontents
+%\doublespacing
+                   
+((* endblock maketitle *))
+((* endblock predoc *))
+
+((* block commands *))
+    % Prevent overflowing lines due to hard-to-break entities
+    \sloppy
+    % Setup hyperref package
+    \hypersetup{
+      breaklinks=true, % so long urls are correctly broken across lines
+	pdftitle={\Title},
+	pdfauthor={\Author},
+	colorlinks=true, %colorise les liens
+	breaklinks=true, %permet le retour à la ligne dans les liens trop longs
+	urlcolor= blue, %couleur des hyperliens
+	linkcolor= blue, %couleur des liens internes
+	citecolor=blue,    %couleur des liens de citations
+	bookmarksopen=false,
+	pdftoolbar=false,
+	pdfmenubar=false,
+%      hidelinks
+      }
+    % Slightly bigger margins than the latex defaults
+    \geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+
+    ((* endblock commands *))
+
+((* block bibliography *))
+\bibliographystyle{plain}
+\bibliography{/tmp/thesis}
+((* endblock bibliography *))
