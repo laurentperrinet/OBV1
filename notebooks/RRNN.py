@@ -43,7 +43,7 @@ class RRNN:
         self.N = 1080 #4000 #                      #number of neurons in the network
         #self.N_show = 40                           #Number of neurons prompted in rasterplots
 
-        #c : connectivity sparseness
+        #c : connectivity sparseness ("all to all by default in recurrent ring")
         #w : global weight, value for every connections
         #w_in : weight of connections between source population and excitatory neurons population
         #s : synaptic delay
