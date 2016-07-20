@@ -334,7 +334,7 @@ class RRNN:
     #======= Rasterplotting functions =======
     #========================================
     #----- One parameter variation ------
-    def Raster(self, df_sim, spikesE, spikesI, title=' RRNN ', input=True, markersize=.3):
+    def Raster(self, df_sim, spikesE, spikesI, title=' RRNN ', input=True, markersize=.5):
         #eventplot
         # line_properties = {'c':'r'}
         if input:
@@ -742,43 +742,43 @@ class RRNN:
         fr = np.array(df['m_f_rate'])
         cv = np.array(df['cv'])
         cv = cv.reshape((n, 3))
-        g = np.array(df[var])
-        g = g.reshape((n, 3))
-        N_g = np.size(g)
+        param_value = np.array(df[var])
+        pv = param_value.reshape((n, 3))
+        N_pv = np.size(pv)
         fr = fr.reshape((n,3))
         dfdI = ((fr[:,1] - fr[:,0]) / (dI1-dI0) + (fr[:,2] - fr[:,1]) / (dI2-dI1)) * .5
         cost = (1-lambda_cv) * (1 - dfdI / dfdI.max()) + lambda_cv * (1- np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2))
         if var == 'w_inh_exc':
             fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(g[:,1]/self.w, cv[:,1], label='CV')
-            ax.plot(g[:,1]/self.w, dfdI / dfdI_norm, label='sensitivity')
+            ax.plot(pv[:,1]/self.w, cv[:,1], label='CV')
+            ax.plot(pv[:,1]/self.w, dfdI / dfdI_norm, label='sensitivity')
             ax.legend()
 
             fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(g[:,1]/self.w, 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
-            ax.plot(g[:,1]/self.w, 1 - dfdI / dfdI.max(), label='inv. sensit.')
-            ax.plot(g[:,1]/self.w, cost, label='total cost')
+            ax.plot(pv[:,1]/self.w, 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
+            ax.plot(pv[:,1]/self.w, 1 - dfdI / dfdI.max(), label='inv. sensit.')
+            ax.plot(pv[:,1]/self.w, cost, label='total cost')
             ax.legend()
             plt.tight_layout()
 
             ind = np.argmin(cost)
-            return g[ind][0]/self.w
+            return pv[ind][0]/self.w
 
         else:
             fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(g[:,1], cv[:,1], label='CV')
-            ax.plot(g[:,1], dfdI / 100., label='sensitivity')
+            ax.plot(pv[:,1], cv[:,1], label='CV')
+            ax.plot(pv[:,1], dfdI / 100., label='sensitivity')
             ax.legend()
 
             fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(g[:,1], 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
-            ax.plot(g[:,1], 1 - dfdI / dfdI.max(), label='inv. sensit.')
-            ax.plot(g[:,1], cost, label='total cost')
+            ax.plot(pv[:,1], 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
+            ax.plot(pv[:,1], 1 - dfdI / dfdI.max(), label='inv. sensit.')
+            ax.plot(pv[:,1], cost, label='total cost')
             ax.legend()
             plt.tight_layout()
 
             ind = np.argmin(cost)
-            return g[ind][0]
+            return pv[ind][0]
 
 #======================================================
 #================  Miscellaneous ======================
