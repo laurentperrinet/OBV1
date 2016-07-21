@@ -73,6 +73,8 @@ class RRNN:
                 self.sim_params['b_inh_exc'] = b_ie
                 self.sim_params['b_inh_inh'] = b_ii
             self.sim_params['b_input'] = b_input
+        else:
+            self.sim_params = self.init_params()
 
         #------- Cell's parameters -------
         self.cell_params = {
@@ -281,7 +283,7 @@ class RRNN:
         spikesE = E_neurons.get_data().segments[0]
         spikesI = I_neurons.get_data().segments[0]
         self.spikesP = self.spike_source.get_data().segments[0]
-
+ 
         self.spikesE = spikesE
         self.spikesI = spikesI
 
@@ -737,7 +739,7 @@ class RRNN:
         else:
             print('fâdâ va ')
 
-    def value_minCost(self, df, n, var, dfdI_norm=10, lambda_cv=.7, sigma_cv=.5):
+    def value_minCost(self, df, n, var, dfdI_norm=10, lambda_cv=.8, sigma_cv=.5):
         dI0, dI1, dI2 = np.array(df['input_rate'])[0], np.array(df['input_rate'])[1], np.array(df['input_rate'])[2]
         fr = np.array(df['m_f_rate'])
         cv = np.array(df['cv'])
