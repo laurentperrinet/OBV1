@@ -737,7 +737,7 @@ class RRNN:
         else:
             print('fâdâ va ')
 
-    def value_minCost(self, df, n, var, dfdI_norm=10, lambda_cv=.5, sigma_cv=.5):
+    def value_minCost(self, df, n, var, dfdI_norm=10, lambda_cv=.7, sigma_cv=.5):
         dI0, dI1, dI2 = np.array(df['input_rate'])[0], np.array(df['input_rate'])[1], np.array(df['input_rate'])[2]
         fr = np.array(df['m_f_rate'])
         cv = np.array(df['cv'])
@@ -783,7 +783,10 @@ class RRNN:
 #======================================================
 #================  Miscellaneous ======================
 #======================================================
-    def fit_vonMises(self, spikes, verbose=False):
+
+
+#---------Fitting network activity with Von mises distribution----------
+def fit_vonMises(self, spikes, verbose=False):
         theta = self.sim_params['angle_input']*np.pi/180
         fr = np.zeros(len(spikes.spiketrains))
         for i, st in enumerate(spikes.spiketrains):
@@ -801,12 +804,12 @@ class RRNN:
 
         y = np.array(fr)
         x = np.linspace(0, np.pi, len(spikes.spiketrains))
-        #y
         result = vonM_mod.fit(y, x = x, sigma=np.pi/2, amp=y.mean(), m=np.pi/2)
         if verbose: print(result.fit_report())
         return x, y, result
 
-    def plot_hist(self, panel, hist, bins, width, xlabel=None, ylabel=None,
+#----------Plotting histograms-------------
+def plot_hist(self, panel, hist, bins, width, xlabel=None, ylabel=None,
                 label=None, xticks=None, xticklabels=None, xmin=None, ymax=None):
         if xlabel: panel.set_xlabel(xlabel)
         if ylabel: panel.set_ylabel(ylabel)
