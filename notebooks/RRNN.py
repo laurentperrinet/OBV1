@@ -29,7 +29,7 @@ from IPython.display import display
 from ipywidgets import interact
 
 class RRNN:
-    def __init__(self, seed=56, c=.015, w_in=.5, w=.1, g=2., s=1., p=.5,
+    def __init__(self, seed=56, c=.015, i_rate=10, w_in=.5, w=.1, g=2., s=1., p=.5,
                 time=100, n_model='cond_exp', source='poisson', ring=True, ff_ring=False,
                 b_input=10, b_ei=50, b_ee=4, b_ie=50, b_ii=4):
 
@@ -43,8 +43,9 @@ class RRNN:
         self.N = 1080 #4000 #                      #number of neurons in the network
         #self.N_show = 40                           #Number of neurons prompted in rasterplots
 
-        #c : connectivity sparseness
+        #c : connectivity sparseness ("all to all by default in recurrent ring")
         #w : global weight, value for every connections
+        #i_rate : input rate, mean firing rate of source population neurons
         #w_in : weight of connections between source population and excitatory neurons population
         #s : synaptic delay
         #g : inhibition-excitation coupling
@@ -54,7 +55,8 @@ class RRNN:
         #angle_input : the most represented orientation angle in input distribution
         #b_xx : orientation selectivity for a projection xx
 
-        self.c, self.w, self.w_in, self.s = c, w, w_in, s
+
+        self.c, self.w, self.i_rate, self.w_in, self.s = c, w, i_rate, w_in, s
         self.g, self.p, self.n_model = g, p, n_model
 
         self.simtime = time
@@ -73,6 +75,8 @@ class RRNN:
                 self.sim_params['b_inh_exc'] = b_ie
                 self.sim_params['b_inh_inh'] = b_ii
             self.sim_params['b_input'] = b_input
+        else:
+            self.sim_params = self.init_params()
 
         #------- Cell's parameters -------
         self.cell_params = {
@@ -94,7 +98,7 @@ class RRNN:
         'simtime'     : self.simtime,       # (ms)
         #'dt'          : 0.1,               # (ms)
 
-        'input_rate'  : 10.,                # (Hz)
+        'input_rate'  : self.i_rate,                # (Hz)
         'b_input'     : np.inf,
         'angle_input' : 90, # degrees
 
@@ -281,7 +285,7 @@ class RRNN:
         spikesE = E_neurons.get_data().segments[0]
         spikesI = I_neurons.get_data().segments[0]
         self.spikesP = self.spike_source.get_data().segments[0]
-
+ 
         self.spikesE = spikesE
         self.spikesI = spikesI
 
@@ -334,7 +338,7 @@ class RRNN:
     #======= Rasterplotting functions =======
     #========================================
     #----- One parameter variation ------
-    def Raster(self, df_sim, spikesE, spikesI, title=' RRNN ', input=True, markersize=.3):
+    def Raster(self, df_sim, spikesE, spikesI, title=' RRNN ', input=True, markersize=.5):
         #eventplot
         # line_properties = {'c':'r'}
         if input:
@@ -737,53 +741,56 @@ class RRNN:
         else:
             print('fâdâ va ')
 
-    def value_minCost(self, df, n, var, dfdI_norm=10, lambda_cv=.5, sigma_cv=.5):
+    def value_minCost(self, df, n, var, dfdI_norm=10, lambda_cv=.8, sigma_cv=.5):
         dI0, dI1, dI2 = np.array(df['input_rate'])[0], np.array(df['input_rate'])[1], np.array(df['input_rate'])[2]
         fr = np.array(df['m_f_rate'])
         cv = np.array(df['cv'])
         cv = cv.reshape((n, 3))
-        g = np.array(df[var])
-        g = g.reshape((n, 3))
-        N_g = np.size(g)
+        param_value = np.array(df[var])
+        pv = param_value.reshape((n, 3))
+        N_pv = np.size(pv)
         fr = fr.reshape((n,3))
         dfdI = ((fr[:,1] - fr[:,0]) / (dI1-dI0) + (fr[:,2] - fr[:,1]) / (dI2-dI1)) * .5
         cost = (1-lambda_cv) * (1 - dfdI / dfdI.max()) + lambda_cv * (1- np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2))
         if var == 'w_inh_exc':
             fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(g[:,1]/self.w, cv[:,1], label='CV')
-            ax.plot(g[:,1]/self.w, dfdI / dfdI_norm, label='sensitivity')
+            ax.plot(pv[:,1]/self.w, cv[:,1], label='CV')
+            ax.plot(pv[:,1]/self.w, dfdI / dfdI_norm, label='sensitivity')
             ax.legend()
 
             fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(g[:,1]/self.w, 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
-            ax.plot(g[:,1]/self.w, 1 - dfdI / dfdI.max(), label='inv. sensit.')
-            ax.plot(g[:,1]/self.w, cost, label='total cost')
+            ax.plot(pv[:,1]/self.w, 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
+            ax.plot(pv[:,1]/self.w, 1 - dfdI / dfdI.max(), label='inv. sensit.')
+            ax.plot(pv[:,1]/self.w, cost, label='total cost')
             ax.legend()
             plt.tight_layout()
 
             ind = np.argmin(cost)
-            return g[ind][0]/self.w
+            return pv[ind][0]/self.w
 
         else:
             fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(g[:,1], cv[:,1], label='CV')
-            ax.plot(g[:,1], dfdI / 100., label='sensitivity')
+            ax.plot(pv[:,1], cv[:,1], label='CV')
+            ax.plot(pv[:,1], dfdI / 100., label='sensitivity')
             ax.legend()
 
             fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(g[:,1], 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
-            ax.plot(g[:,1], 1 - dfdI / dfdI.max(), label='inv. sensit.')
-            ax.plot(g[:,1], cost, label='total cost')
+            ax.plot(pv[:,1], 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
+            ax.plot(pv[:,1], 1 - dfdI / dfdI.max(), label='inv. sensit.')
+            ax.plot(pv[:,1], cost, label='total cost')
             ax.legend()
             plt.tight_layout()
 
             ind = np.argmin(cost)
-            return g[ind][0]
+            return pv[ind][0]
 
 #======================================================
 #================  Miscellaneous ======================
 #======================================================
-    def fit_vonMises(self, spikes, verbose=False):
+
+
+#---------Fitting network activity with Von mises distribution----------
+def fit_vonMises(self, spikes, verbose=False):
         theta = self.sim_params['angle_input']*np.pi/180
         fr = np.zeros(len(spikes.spiketrains))
         for i, st in enumerate(spikes.spiketrains):
@@ -801,12 +808,12 @@ class RRNN:
 
         y = np.array(fr)
         x = np.linspace(0, np.pi, len(spikes.spiketrains))
-        #y
         result = vonM_mod.fit(y, x = x, sigma=np.pi/2, amp=y.mean(), m=np.pi/2)
         if verbose: print(result.fit_report())
         return x, y, result
 
-    def plot_hist(self, panel, hist, bins, width, xlabel=None, ylabel=None,
+#----------Plotting histograms-------------
+def plot_hist(self, panel, hist, bins, width, xlabel=None, ylabel=None,
                 label=None, xticks=None, xticklabels=None, xmin=None, ymax=None):
         if xlabel: panel.set_xlabel(xlabel)
         if ylabel: panel.set_ylabel(ylabel)
