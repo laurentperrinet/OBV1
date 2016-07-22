@@ -29,7 +29,7 @@ from IPython.display import display
 from ipywidgets import interact
 
 class RRNN:
-    def __init__(self, seed=56, c=.015, i_rate=10, w_in=.5, w=.1, g=2., s=1., p=.5,
+    def __init__(self, seed=56, c=.015, i_rate=10., w_in=.5, w=.1, g=2., s=1., p=.5,
                 time=100, n_model='cond_exp', source='poisson', ring=True, ff_ring=False,
                 b_input=10, b_ei=50, b_ee=4, b_ie=50, b_ii=4):
 
