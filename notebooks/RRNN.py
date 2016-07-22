@@ -29,7 +29,7 @@ from IPython.display import display
 from ipywidgets import interact
 
 class RRNN:
-    def __init__(self, seed=56, c=.015, w_in=.5, w=.1, g=2., s=1., p=.5,
+    def __init__(self, seed=56, c=.015, i_rate=10, w_in=.5, w=.1, g=2., s=1., p=.5,
                 time=100, n_model='cond_exp', source='poisson', ring=True, ff_ring=False,
                 b_input=10, b_ei=50, b_ee=4, b_ie=50, b_ii=4):
 
@@ -45,6 +45,7 @@ class RRNN:
 
         #c : connectivity sparseness ("all to all by default in recurrent ring")
         #w : global weight, value for every connections
+        #i_rate : input rate, mean firing rate of source population neurons
         #w_in : weight of connections between source population and excitatory neurons population
         #s : synaptic delay
         #g : inhibition-excitation coupling
@@ -54,7 +55,8 @@ class RRNN:
         #angle_input : the most represented orientation angle in input distribution
         #b_xx : orientation selectivity for a projection xx
 
-        self.c, self.w, self.w_in, self.s = c, w, w_in, s
+
+        self.c, self.w, self.i_rate, self.w_in, self.s = c, w, i_rate, w_in, s
         self.g, self.p, self.n_model = g, p, n_model
 
         self.simtime = time
@@ -96,7 +98,7 @@ class RRNN:
         'simtime'     : self.simtime,       # (ms)
         #'dt'          : 0.1,               # (ms)
 
-        'input_rate'  : 10.,                # (Hz)
+        'input_rate'  : self.i_rate,                # (Hz)
         'b_input'     : np.inf,
         'angle_input' : 90, # degrees
 
