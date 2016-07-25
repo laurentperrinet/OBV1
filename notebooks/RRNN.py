@@ -29,9 +29,7 @@ from IPython.display import display
 from ipywidgets import interact
 
 class RRNN:
-    def __init__(self, seed=56, c=.015, i_rate=10., w_in=.5, w=.1, g=2., s=1., p=.5,
-                time=100, n_model='cond_exp', source='poisson', ring=True, ff_ring=False,
-                b_input=10, b_ei=50, b_ee=4, b_ie=50, b_ii=4):
+    def __init__(self, ring=True, recurrent=False, seed=56, source='poisson'):
 
         #==================================================
         #==============  Parameters =======================
@@ -40,8 +38,18 @@ class RRNN:
         #The RRNN is a ring recurrent by default
 
 
-        self.N = 1080 #4000 #                      #number of neurons in the network
+#         self.simtime = time
+        self.seed = seed
+        self.source = source
+        self.ring, self.recurrent = ring, recurrent
+        self.default_params()
+
+
+    def default_params(self, time=100, N=1080, n_model='cond_exp', i_rate=10., s=1., p=.5):
+        self.N = N                      #number of neurons in the network
         #self.N_show = 40                           #Number of neurons prompted in rasterplots
+
+
 
         #c : connectivity sparseness ("all to all by default in recurrent ring")
         #w : global weight, value for every connections
@@ -56,28 +64,22 @@ class RRNN:
         #b_xx : orientation selectivity for a projection xx
 
 
-        self.c, self.w, self.i_rate, self.w_in, self.s = c, w, i_rate, w_in, s
-        self.g, self.p, self.n_model = g, p, n_model
-
-        self.simtime = time
-        self.seed = seed
-        self.source = source
-
-        if ring :
-            if ff_ring:
-                self.w = 0
-                self.sim_params = self.init_params()
+        if self.ring:
+            self.c = 1
+            if self.recurrent :
+                self.w = .5
+                self.g = 2.
             else:
-                self.c = 1
-                self.sim_params = self.init_params()
-                self.sim_params['b_exc_inh'] = b_ei
-                self.sim_params['b_exc_exc'] = b_ee
-                self.sim_params['b_inh_exc'] = b_ie
-                self.sim_params['b_inh_inh'] = b_ii
-            self.sim_params['b_input'] = b_input
+                self.w, w_input_exc = .1, .5
+                self.g = 0.
         else:
-            self.sim_params = self.init_params()
-
+            self.c = 0.15
+            if self.recurrent :
+                self.w, w_input_exc = .4, .5
+                self.g = 2.
+            else:
+                self.w, w_input_exc = 0, .5
+                self.g = 0.
         #------- Cell's parameters -------
         self.cell_params = {
         'tau_m'      : 20.0,   # (ms)
@@ -92,44 +94,32 @@ class RRNN:
         'cm'         : 0.5,    # (nF)
         }
 
-    def init_params(self):
-         return {
+        self.sim_params = {
 
-        'simtime'     : self.simtime,       # (ms)
+        'simtime'     : time,       # (ms)
         #'dt'          : 0.1,               # (ms)
 
-        'input_rate'  : self.i_rate,                # (Hz)
+        'input_rate'  : i_rate,                # (Hz)
         'b_input'     : np.inf,
         'angle_input' : 90, # degrees
 
 
         'nb_neurons'  : self.N,    #neurons number
-        'p'           : self.p,        #excitators rate in the population
-        'neuron_model': self.n_model,    #the neuron model
+        'p'           : p,        #excitators rate in the population
+        'neuron_model': n_model,    #the neuron model
         'v_init_min'   : -53.5,  # (mV)
         'v_init_max'   : -49.75,  # (mV)
         #connectivity
         #'c_input_exc' : 1., #self.c*10,
         'c_input_inh' : 0, #self.c*0.,
-        'c_exc_inh'   : self.c,
-        'c_inh_exc'   : self.c,
-        'c_exc_exc'   : self.c,
-        'c_inh_inh'   : self.c,
-
-        #synaptic weight (µS)
-        'w_input_exc' : self.w_in,
-        #'w_input_inh' : self.w*0.,
-        'w_exc_inh'   : self.w*self.g,
-        'w_inh_exc'   : self.w,
-        'w_exc_exc'   : self.w,
-        'w_inh_inh'   : self.w*self.g,
+        'w_input_exc' : w_input_exc,
         #synaptic delay (ms)
-        's_input_exc' : self.s,
-        's_input_inh' : self.s,
-        's_exc_inh'   : self.s,
-        's_inh_exc'   : self.s,
-        's_exc_exc'   : self.s,
-        's_inh_inh'   : self.s,
+        's_input_exc' : s,
+        's_input_inh' : s,
+        's_exc_inh'   : s,
+        's_inh_exc'   : s,
+        's_exc_exc'   : s,
+        's_inh_inh'   : s,
         #B_thetas for the ring
         # 'b_input_exc' : np.inf,
         'b_exc_inh'   : np.inf,
@@ -137,7 +127,28 @@ class RRNN:
         'b_inh_exc'   : np.inf,
         'b_inh_inh'   : np.inf
         }
+        self.init_params()
 
+        if self.ring :
+            self.sim_params['b_input'] = 10.
+            self.sim_params['b_exc_inh'] = 50.
+            self.sim_params['b_exc_exc'] = 4.
+            self.sim_params['b_inh_exc'] = 50.
+            self.sim_params['b_inh_inh'] = 4.
+
+    def init_params(self):
+        self.sim_params.update({
+        'c_exc_inh'   : self.c,
+        'c_inh_exc'   : self.c,
+        'c_exc_exc'   : self.c,
+        'c_inh_inh'   : self.c,
+
+        #synaptic weight (µS)
+        'w_exc_inh'   : self.w*self.g,
+        'w_inh_exc'   : self.w,
+        'w_exc_exc'   : self.w,
+        'w_inh_inh'   : self.w*self.g,
+        })
     #============================================
     #=========== The Network ====================
     #============================================
@@ -285,7 +296,7 @@ class RRNN:
         spikesE = E_neurons.get_data().segments[0]
         spikesI = I_neurons.get_data().segments[0]
         self.spikesP = self.spike_source.get_data().segments[0]
- 
+
         self.spikesE = spikesE
         self.spikesI = spikesI
 
@@ -356,7 +367,7 @@ class RRNN:
 
         for ax in f.fig.axes:
             ax.set_axis_bgcolor('w')
-            ax.set_xticks(np.linspace(0, self.simtime, 6, endpoint=True))
+            ax.set_xticks(np.linspace(0, self.sim_params['simtime'], 6, endpoint=True))
         f.fig.subplots_adjust(hspace=0) # TODO
         return f
 
@@ -641,13 +652,71 @@ class RRNN:
         plt.xlabel('Time (ms)')
         plt.ylabel('Spike number')
         plt.show()
+#
+#     def g_dFoverdI(self, g_values):
+#         df = None
+#
+#         for value in g_values:
+#             self.setParams(['w_inh_exc', 'w_inh_inh'], [value, value])
+#             #self.setParams(['w_exc_inh', 'w_inh_inh'], [value, value])
+#             df_sim = self.variationDF('input_rate', self.sim_params['input_rate']*np.logspace(-.02, .02, 3, endpoint=True))
+#             if df is None:
+#                 df = df_sim
+#             else:
+#                 df = df.append(df_sim)
+#         return df
+#
+#     def c_dFoverdI(self, c_values):
+#         df = None
+#
+#         for value in c_values:
+#             self.setParams(['c_exc_inh', 'c_exc_exc', 'c_inh_exc', 'c_inh_inh'],
+#                             [value, value, value, value])
+#             df_sim = self.variationDF('input_rate', self.sim_params['input_rate']*np.logspace(-.02, .02, 3, endpoint=True))
+#             if df is None:
+#                 df = df_sim
+#             else:
+#                 df = df.append(df_sim)
+#         return df
+#
+#     def w_dFoverdI(self, w_values):
+#         df = None
+#
+#         for value in w_values:
+#             self.setParams(['w_exc_exc', 'w_exc_inh', 'w_inh_exc', 'w_inh_inh'],
+#                             [value, value, self.g*value, self.g*value])
+#             df_sim = self.variationDF('input_rate', self.sim_params['input_rate']*np.logspace(-.02, .02, 3, endpoint=True))
+#             if df is None:
+#                 df = df_sim
+#             else:
+#                 df = df.append(df_sim)
+#         return df
+#
+#     def win_dFoverdI(self, win_values):
+#         df = None
+#
+#         for value in win_values:
+#             self.setParams(['w_input_exc'],
+#                             [value])
+#             df_sim = self.variationDF('input_rate', self.sim_params['input_rate']*np.logspace(-.02, .02, 3, endpoint=True))
+#             if df is None:
+#                 df = df_sim
+#             else:
+#                 df = df.append(df_sim)
+#         return df
 
-    def g_dFoverdI(self, g_values):
+
+    def dFoverdI(self, values, var):
         df = None
 
-        for value in g_values:
-            self.setParams(['w_inh_exc', 'w_inh_inh'], [value, value])
-            #self.setParams(['w_exc_inh', 'w_inh_inh'], [value, value])
+        for value in values:
+            if var == 'g':
+                self.g = value
+            elif var == 'c':
+                self.c = value
+            elif var == 'w':
+                self.w = value
+            self.init_params()
             df_sim = self.variationDF('input_rate', self.sim_params['input_rate']*np.logspace(-.02, .02, 3, endpoint=True))
             if df is None:
                 df = df_sim
@@ -655,134 +724,103 @@ class RRNN:
                 df = df.append(df_sim)
         return df
 
-    def c_dFoverdI(self, c_values):
-        df = None
+    def multiOptimisation(self, values, var='g', datapath = os.path.join(os.getcwd(), 'data_BalancedRRNN')):
 
-        for value in c_values:
-            self.setParams(['c_exc_inh', 'c_exc_exc', 'c_inh_exc', 'c_inh_inh'],
-                            [value, value, value, value])
-            df_sim = self.variationDF('input_rate', self.sim_params['input_rate']*np.logspace(-.02, .02, 3, endpoint=True))
-            if df is None:
-                df = df_sim
-            else:
-                df = df.append(df_sim)
-        return df
-
-    def w_dFoverdI(self, w_values):
-        df = None
-
-        for value in w_values:
-            self.setParams(['w_exc_exc', 'w_exc_inh', 'w_inh_exc', 'w_inh_inh'],
-                            [value, value, self.g*value, self.g*value])
-            df_sim = self.variationDF('input_rate', self.sim_params['input_rate']*np.logspace(-.02, .02, 3, endpoint=True))
-            if df is None:
-                df = df_sim
-            else:
-                df = df.append(df_sim)
-        return df
-
-    def win_dFoverdI(self, win_values):
-        df = None
-
-        for value in win_values:
-            self.setParams(['w_input_exc'],
-                            [value])
-            df_sim = self.variationDF('input_rate', self.sim_params['input_rate']*np.logspace(-.02, .02, 3, endpoint=True))
-            if df is None:
-                df = df_sim
-            else:
-                df = df.append(df_sim)
-        return df
-
-
-    def multiOptimisation(self, values, c_or_w='g'):
-        datapath = 'data_BalancedRRNN'
         try:
             os.mkdir(datapath)
         except:
             pass
 
-        #-------  G  --------
-        if c_or_w is 'g':
-            filename = os.path.join(os.getcwd(), datapath, 'DataG.pkl')
-            try:
-                df = ps.read_pickle(filename)
-            except:
-                df = self.g_dFoverdI(values)
-                df.to_pickle(filename)
-            print(self.value_minCost(df, len(values), 'w_inh_exc'))
-        #-----  Sparseness ------
-        elif c_or_w == 'c' :
-            filename = os.path.join(os.getcwd(), datapath, 'DataSpars.pkl')
-            try:
-                df = ps.read_pickle(filename)
-            except:
-                df = self.c_dFoverdI(values)
-                df.to_pickle(filename)
-            print (self.value_minCost(df, len(values), 'c_exc_inh'))
-        #------  Weight  -------
-        elif c_or_w == 'w' :
-            filename = os.path.join(os.getcwd(), datapath, 'DataWeight.pkl')
-            try:
-                df = ps.read_pickle(filename)
-            except:
-                df = self.w_dFoverdI(values)
-                df.to_pickle(filename)
-            print( self.value_minCost(df, len(values), 'w_exc_inh'))
+#         #-------  G  --------
+#         if c_or_w is 'g':
+#             filename = os.path.join(os.getcwd(), datapath, 'DataG.pkl')
+#             try:
+#                 df = ps.read_pickle(filename)
+#             except:
+#                 df = self.g_dFoverdI(values)
+#                 df.to_pickle(filename)
+#             print(self.value_minCost(df, len(values), 'g'))
+#         #-----  Sparseness ------
+#         elif c_or_w == 'c' :
+#             filename = os.path.join(os.getcwd(), datapath, 'DataSpars.pkl')
+#             try:
+#                 df = ps.read_pickle(filename)
+#             except:
+#                 df = self.c_dFoverdI(values)
+#                 df.to_pickle(filename)
+#             print (self.value_minCost(df, len(values), 'c_exc_inh'))
+#         #------  Weight  -------
+#         elif c_or_w == 'w' :
+#             filename = os.path.join(os.getcwd(), datapath, 'DataWeight.pkl')
+#             try:
+#                 df = ps.read_pickle(filename)
+#             except:
+#                 df = self.w_dFoverdI(values)
+#                 df.to_pickle(filename)
+#             print( self.value_minCost(df, len(values), 'w_exc_inh'))
+        filename = os.path.join(datapath, 'DataWeight.pkl')
+        try:
+            df = ps.read_pickle(filename)
+        except:
+            df = self.dFoverdI(values, var=var)
+            df.to_pickle(filename)
+        print('Optimum at ', self.value_minCost(df, values, var))
+        return df
         #------- Input weight -----
-        elif c_or_w == 'win' :
-            filename = os.path.join(os.getcwd(), datapath, 'DataWeightIn.pkl')
-            try:
-                df = ps.read_pickle(filename)
-            except:
-                df = self.win_dFoverdI(values)
-                df.to_pickle(filename)
-            print (self.value_minCost(df, len(values), 'w_input_exc'))
-        else:
-            print('fâdâ va ')
+#         elif c_or_w == 'win' :
+#             filename = os.path.join(os.getcwd(), datapath, 'DataWeightIn.pkl')
+#             try:
+#                 df = ps.read_pickle(filename)
+#             except:
+#                 df = self.win_dFoverdI(values)
+#                 df.to_pickle(filename)
+#             print (self.value_minCost(df, len(values), 'w_input_exc'))
+#         else:
+#             print('fâdâ va ')
 
-    def value_minCost(self, df, n, var, dfdI_norm=10, lambda_cv=.8, sigma_cv=.5):
+    def value_minCost(self, df, values, var, dfdI_norm=10, lambda_cv=.8, sigma_cv=.5):
+        n = len(values)
         dI0, dI1, dI2 = np.array(df['input_rate'])[0], np.array(df['input_rate'])[1], np.array(df['input_rate'])[2]
         fr = np.array(df['m_f_rate'])
         cv = np.array(df['cv'])
         cv = cv.reshape((n, 3))
-        param_value = np.array(df[var])
-        pv = param_value.reshape((n, 3))
-        N_pv = np.size(pv)
-        fr = fr.reshape((n,3))
-        dfdI = ((fr[:,1] - fr[:,0]) / (dI1-dI0) + (fr[:,2] - fr[:,1]) / (dI2-dI1)) * .5
-        cost = (1-lambda_cv) * (1 - dfdI / dfdI.max()) + lambda_cv * (1- np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2))
-        if var == 'w_inh_exc':
-            fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(pv[:,1]/self.w, cv[:,1], label='CV')
-            ax.plot(pv[:,1]/self.w, dfdI / dfdI_norm, label='sensitivity')
-            ax.legend()
+#         param_value = np.array(df[var])
+#         pv = param_value.reshape((n, 3))
+#         N_pv = np.size(pv)
+        fr = fr.reshape((n, 3))
+        dfdI = ((fr[:, 1] - fr[:, 0]) / (dI1-dI0) + (fr[:, 2] - fr[:, 1]) / (dI2-dI1)) * .5
+        cost = (1-lambda_cv) * (1 - dfdI / dfdI.max()) + lambda_cv * (1- np.exp(-.5*(1-cv[:, 1])**2/sigma_cv**2))
+#         if var == 'g':
+#             fig, ax = plt.subplots(figsize=(13, 5))
+#             ax.plot(pv[:,1]/self.w, cv[:,1], label='CV')
+#             ax.plot(pv[:,1]/self.w, dfdI / dfdI_norm, label='sensitivity')
+#             ax.legend()
+#
+#             fig, ax = plt.subplots(figsize=(13, 5))
+#             ax.plot(pv[:,1]/self.w, 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
+#             ax.plot(pv[:,1]/self.w, 1 - dfdI / dfdI.max(), label='inv. sensit.')
+#             ax.plot(pv[:,1]/self.w, cost, label='total cost')
+#             ax.legend()
+#             plt.tight_layout()
+#
+#             ind = np.argmin(cost)
+#             return pv[ind][0]/self.w
+#
+#         else:
+        fig, ax = plt.subplots(figsize=(13, 5))
+        ax.plot(values, cv[:, 1], label='CV')
+        ax.plot(values, dfdI / 100., label='sensitivity')
+        ax.legend()
 
-            fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(pv[:,1]/self.w, 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
-            ax.plot(pv[:,1]/self.w, 1 - dfdI / dfdI.max(), label='inv. sensit.')
-            ax.plot(pv[:,1]/self.w, cost, label='total cost')
-            ax.legend()
-            plt.tight_layout()
+        fig, ax = plt.subplots(figsize=(13, 5))
+        ax.plot(values, 1 - np.exp(-.5*(1-cv[:, 1])**2/sigma_cv**2), label='poissonness')
+        ax.plot(values, 1 - dfdI / dfdI.max(), label='inv. sensit.')
+        ax.plot(values, cost, label='total cost')
+        ax.legend()
+        plt.tight_layout()
 
-            ind = np.argmin(cost)
-            return pv[ind][0]/self.w
-
-        else:
-            fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(pv[:,1], cv[:,1], label='CV')
-            ax.plot(pv[:,1], dfdI / 100., label='sensitivity')
-            ax.legend()
-
-            fig, ax = plt.subplots(figsize=(13, 5))
-            ax.plot(pv[:,1], 1 - np.exp(-.5*(1-cv[:,1])**2/sigma_cv**2), label='poissonness')
-            ax.plot(pv[:,1], 1 - dfdI / dfdI.max(), label='inv. sensit.')
-            ax.plot(pv[:,1], cost, label='total cost')
-            ax.legend()
-            plt.tight_layout()
-
-            ind = np.argmin(cost)
-            return pv[ind][0]
+        ind = np.argmin(cost)
+        return values[ind]
 
 #======================================================
 #================  Miscellaneous ======================
