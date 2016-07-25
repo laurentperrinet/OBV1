@@ -285,7 +285,7 @@ class RRNN:
         spikesE = E_neurons.get_data().segments[0]
         spikesI = I_neurons.get_data().segments[0]
         self.spikesP = self.spike_source.get_data().segments[0]
- 
+
         self.spikesE = spikesE
         self.spikesI = spikesI
 
@@ -784,43 +784,43 @@ class RRNN:
             ind = np.argmin(cost)
             return pv[ind][0]
 
-#======================================================
-#================  Miscellaneous ======================
-#======================================================
+    #======================================================
+    #================  Miscellaneous ======================
+    #======================================================
 
 
-#---------Fitting network activity with Von mises distribution----------
-def fit_vonMises(self, spikes, verbose=False):
-        theta = self.sim_params['angle_input']*np.pi/180
-        fr = np.zeros(len(spikes.spiketrains))
-        for i, st in enumerate(spikes.spiketrains):
-            fr[i] = np.float(len (st))
+    #---------Fitting network activity with Von mises distribution----------
+    def fit_vonMises(self, spikes, verbose=False):
+            theta = self.sim_params['angle_input']*np.pi/180
+            fr = np.zeros(len(spikes.spiketrains))
+            for i, st in enumerate(spikes.spiketrains):
+                fr[i] = np.float(len (st))
 
-        def mises(x, sigma, amp, m=np.pi/2):
-            kappa = 1. / sigma**2
-            exp_c = np.exp(np.cos(2*(x-m))*kappa)
-            return amp * exp_c #/(2*np.pi*iv(0, kappa))
+            def mises(x, sigma, amp, m=np.pi/2):
+                kappa = 1. / sigma**2
+                exp_c = np.exp(np.cos(2*(x-m))*kappa)
+                return amp * exp_c #/(2*np.pi*iv(0, kappa))
 
-        from lmfit import Model
-        vonM_mod = Model(mises)
-        #vonM_mod.param_names
-        #vonM_mod.independent_vars
+            from lmfit import Model
+            vonM_mod = Model(mises)
+            #vonM_mod.param_names
+            #vonM_mod.independent_vars
 
-        y = np.array(fr)
-        x = np.linspace(0, np.pi, len(spikes.spiketrains))
-        result = vonM_mod.fit(y, x = x, sigma=np.pi/2, amp=y.mean(), m=np.pi/2)
-        if verbose: print(result.fit_report())
-        return x, y, result
+            y = np.array(fr)
+            x = np.linspace(0, np.pi, len(spikes.spiketrains))
+            result = vonM_mod.fit(y, x = x, sigma=np.pi/2, amp=y.mean(), m=np.pi/2)
+            if verbose: print(result.fit_report())
+            return x, y, result
 
-#----------Plotting histograms-------------
-def plot_hist(self, panel, hist, bins, width, xlabel=None, ylabel=None,
-                label=None, xticks=None, xticklabels=None, xmin=None, ymax=None):
-        if xlabel: panel.set_xlabel(xlabel)
-        if ylabel: panel.set_ylabel(ylabel)
-        for t,n in zip(bins[:-1], hist):
-            panel.bar(t, n, width=width, color=None)
-        if xmin: panel.set_xlim(xmin=xmin)
-        if ymax: panel.set_ylim(ymax=ymax)
-        if xticks is not None: panel.set_xticks(xticks)
-        if xticklabels: panel.set_xticklabels(xticklabels)
-        panel.text(0.8, 0.8, label, transform=panel.transAxes)
+    #----------Plotting histograms-------------
+    def plot_hist(self, panel, hist, bins, width, xlabel=None, ylabel=None,
+                    label=None, xticks=None, xticklabels=None, xmin=None, ymax=None):
+            if xlabel: panel.set_xlabel(xlabel)
+            if ylabel: panel.set_ylabel(ylabel)
+            for t,n in zip(bins[:-1], hist):
+                panel.bar(t, n, width=width, color=None)
+            if xmin: panel.set_xlim(xmin=xmin)
+            if ymax: panel.set_ylim(ymax=ymax)
+            if xticks is not None: panel.set_xticks(xticks)
+            if xticklabels: panel.set_xticklabels(xticklabels)
+            panel.text(0.8, 0.8, label, transform=panel.transAxes)
