@@ -74,7 +74,7 @@ class RRNN:
         if self.ring:
             self.c = 1
             if self.recurrent :
-                self.w = .5
+                self.w, w_input_exc = .5, .5
                 self.g = 2.
             else:
                 self.w, w_input_exc = .1, .5
