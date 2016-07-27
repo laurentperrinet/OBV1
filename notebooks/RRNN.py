@@ -63,7 +63,14 @@ class RRNN:
         #angle_input : the most represented orientation angle in input distribution
         #b_xx : orientation selectivity for a projection xx
 
-
+        #RRNN AI state: 
+        #w = 3.4,
+        #wie = .5,
+        #g = 2.,
+        #c = 0.15,
+        #p = .5,
+        #i_rate = 10,
+        #s=1.
         if self.ring:
             self.c = 1
             if self.recurrent :
@@ -75,7 +82,7 @@ class RRNN:
         else:
             self.c = 0.15
             if self.recurrent :
-                self.w, w_input_exc = .4, .5
+                self.w, w_input_exc = 3.4, .5
                 self.g = 2.
             else:
                 self.w, w_input_exc = 0, .5
