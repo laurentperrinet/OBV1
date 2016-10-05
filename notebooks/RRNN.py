@@ -63,7 +63,7 @@ class RRNN:
         #angle_input : the most represented orientation angle in input distribution
         #b_xx : orientation selectivity for a projection xx
 
-        #RRNN SR state: 
+        #RRNN SR state:
         #w = 3.4,
         #wie = .5,
         #g = 2.,
@@ -72,20 +72,20 @@ class RRNN:
         #i_rate = 10,
         #s=1.
         if self.ring:
-            self.c = 1
+            self.c = 1.
             if self.recurrent :
-                self.w, w_input_exc = .5, .5
-                self.g = 2.
+                self.w, self.w_inh, w_input_exc = .25, .2, .5
+                self.g = 1.
             else:
-                self.w, w_input_exc = .1, .5
+                self.w, self.w_inh, w_input_exc = .1, .0, .5
                 self.g = 0.
         else:
             self.c = 0.15
             if self.recurrent :
-                self.w, w_input_exc = .9, .5
-                self.g = 2.
+                self.w, self.w_inh, w_input_exc = .25, .2, .5
+                self.g = 1.
             else:
-                self.w, w_input_exc = 0, .5
+                self.w, self.w_inh, w_input_exc = .0, .0, .5
                 self.g = 0.
         #------- Cell's parameters -------
         self.cell_params = {
@@ -138,10 +138,10 @@ class RRNN:
 
         if self.ring :
             self.sim_params['b_input'] = 10.
-            self.sim_params['b_exc_inh'] = 50.
-            self.sim_params['b_exc_exc'] = 4.
-            self.sim_params['b_inh_exc'] = 50.
-            self.sim_params['b_inh_inh'] = 4.
+            self.sim_params['b_exc_inh'] = 5.
+            self.sim_params['b_exc_exc'] = 20.
+            self.sim_params['b_inh_exc'] = 30.
+            self.sim_params['b_inh_inh'] = 10.
 
     def init_params(self):
         self.sim_params.update({
@@ -152,9 +152,9 @@ class RRNN:
 
         #synaptic weight (µS)
         'w_exc_inh'   : self.w*self.g,
-        'w_inh_exc'   : self.w,
+        'w_inh_exc'   : self.w_inh,
         'w_exc_exc'   : self.w,
-        'w_inh_inh'   : self.w*self.g,
+        'w_inh_inh'   : self.w_inh*self.g,
         })
     #============================================
     #=========== The Network ====================
@@ -176,7 +176,7 @@ class RRNN:
 
         #tuning_function = lambda i, j, B, N : np.exp((np.cos(2.*((i-j)/N*np.pi))-1)/(B*np.pi/180)**2)
         N_in = int(sim_params['nb_neurons']*sim_params['p'])
-        self.spike_source = sim.Population(N_in, sim.SpikeSourcePoisson(rate=sim_params['input_rate']))
+        self.spike_source = sim.Population(N_in, sim.SpikeSourcePoisson(rate=sim_params['input_rate'], duration=sim_params['simtime']))
 
         if True: #not sim_params['b_input'] == np.inf:
             angle = 1. * np.arange(N_in)
@@ -839,7 +839,7 @@ class RRNN:
             theta = self.sim_params['angle_input']*np.pi/180
             fr = np.zeros(len(spikes.spiketrains))
             for i, st in enumerate(spikes.spiketrains):
-                fr[i] = np.float(len (st))
+                fr[i] = np.float(len(st))
 
             def mises(x, sigma, amp, m=np.pi/2):
                 kappa = 1. / sigma**2
@@ -852,8 +852,9 @@ class RRNN:
             #vonM_mod.independent_vars
 
             y = np.array(fr)
+            #print(np.nanmean(y).shape)
             x = np.linspace(0, np.pi, len(spikes.spiketrains))
-            result = vonM_mod.fit(y, x = x, sigma=np.pi/2, amp=y.mean(), m=np.pi/2)
+            result = vonM_mod.fit(y, x = x, sigma=np.pi/2, amp=np.nanmean(y), m=np.pi/2)
             if verbose: print(result.fit_report())
             return x, y, result
 
