@@ -45,7 +45,7 @@ class RRNN:
         self.default_params()
 
 
-    def default_params(self, time=100, N=1080, n_model='cond_exp', i_rate=10., s=1., p=.5):
+    def default_params(self, time=1000, N=1080, n_model='cond_exp', i_rate=10., s=1., p=.5):
         self.N = N                      #number of neurons in the network
         #self.N_show = 40                           #Number of neurons prompted in rasterplots
 
@@ -74,18 +74,18 @@ class RRNN:
         if self.ring:
             self.c = 1.
             if self.recurrent :
-                self.w, self.w_inh, w_input_exc = .25, .2, .5
-                self.g = 1.
+                self.w, self.w_inh, w_input_exc = .2, .3, .3
+                self.g = 3.
             else:
-                self.w, self.w_inh, w_input_exc = .1, .0, .5
+                self.w, self.w_inh, w_input_exc = .1, .0, .3
                 self.g = 0.
         else:
             self.c = 0.15
             if self.recurrent :
-                self.w, self.w_inh, w_input_exc = .25, .2, .5
+                self.w, self.w_inh, w_input_exc = .25, .2, .3
                 self.g = 1.
             else:
-                self.w, self.w_inh, w_input_exc = .0, .0, .5
+                self.w, self.w_inh, w_input_exc = .0, .0, .3
                 self.g = 0.
         #------- Cell's parameters -------
         self.cell_params = {
@@ -139,8 +139,8 @@ class RRNN:
         if self.ring :
             self.sim_params['b_input'] = 10.
             self.sim_params['b_exc_inh'] = 5.
-            self.sim_params['b_exc_exc'] = 20.
-            self.sim_params['b_inh_exc'] = 30.
+            self.sim_params['b_exc_exc'] = 10.
+            self.sim_params['b_inh_exc'] = 40.
             self.sim_params['b_inh_inh'] = 10.
 
     def init_params(self):
