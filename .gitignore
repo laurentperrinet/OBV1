@@ -1,4 +1,6 @@
 .ipynb_checkpoints
+figs/.DS_Store
+.DS_Store
 notebooks/.ipynb_checkpoints
 notebooks/thesis.ipynb
 notebooks/thesis.pdf
